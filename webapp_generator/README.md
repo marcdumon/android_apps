@@ -31,9 +31,12 @@ the projects it makes.
     # sign-in redirect escapes to the browser and the app never gets the session cookie.
     ./new_webapp.sh --name Jira --url https://example.atlassian.net/ --extra-hosts atlassian.com,okta.com
     
-    # Change an existing app and reinstall it. --force keeps its signing key and bumps the
-    # version code, so the new APK installs over the old one instead of being refused.
-    ./new_webapp.sh --name Tasks --url https://tasks.google.com/ --dir webapp_google_tasks --ua desktop --force
+    # Update an existing app. No other options are needed: the settings are read back out
+    # of the project, so this rebuilds it exactly as it was.
+    ./new_webapp.sh --dir webapp_google_tasks --force
+
+    # Change one setting on an existing app. Everything else stays as it was.
+    ./new_webapp.sh --dir webapp_google_tasks --ua mobile --force
 
 ## Options
 
@@ -49,7 +52,8 @@ the projects it makes.
 | `--extra-hosts H,H` | Extra hosts kept inside the app. The site's own domain is always kept; everything else opens in the browser. |
 | `--login-hosts H` | Sign-in domains that always get the phone user agent, even in desktop mode. Default `accounts.google.com`. A desktop user agent from a phone is refused by sign-in pages. |
 | `--version-code N` | Force a version code. |
-| `--force` | Rebuild over an existing project, keeping its keystore. |
+| `--force` | Update an existing project. Required before it will touch one. |
+| `--session-cookie C` | Cookie name that proves a signed-in session, so the app knows when it may switch from the sign-in user agent to the configured one. Default none, meaning any cookie counts. |
 
 ## Why the user agent is faked
 
@@ -79,3 +83,19 @@ app - regenerating overwrites it.
 
 JDK 17, Android SDK and Gradle 8.7 live in `~/Android` (~1.8 GB), nothing installed
 system-wide. `rm -rf ~/Android` removes it; nothing else on the machine depends on it.
+
+## Regenerating an existing app
+
+Regeneration is not destructive. The generator lays the template over the project rather than
+replacing it, so it only touches files it owns:
+
+| Kept | Refreshed |
+| --- | --- |
+| The settings, read back from `gradle.properties` and `signing.properties`, so options you gave last time do not have to be repeated | The Java source, the manifest, `build.gradle`, the theme resources, everything that comes from the template |
+| The keystore, the version code, and the launcher icon | `gradle.properties`, `signing.properties`, `build.sh`, `local.properties` |
+| `README.md`, written once and never overwritten, so notes you add survive | |
+| Any file the generator never created, a changelog or an icon script for instance | |
+
+An option on the command line always wins over the stored value, so changing one thing is a
+single flag and everything else stays as it was. The version code is never changed on its
+own; pass `--version-code` when you want a new one.
