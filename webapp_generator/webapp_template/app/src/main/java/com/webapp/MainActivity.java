@@ -4,7 +4,9 @@ import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.content.ActivityNotFoundException;
 import android.content.Intent;
+import android.content.res.Configuration;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.webkit.CookieManager;
 import android.webkit.WebResourceRequest;
@@ -53,6 +55,7 @@ public class MainActivity extends Activity {
         s.setLoadWithOverviewMode(true);
         s.setBuiltInZoomControls(true);
         s.setDisplayZoomControls(false);
+        applyDarkMode(s);
         // Dropping the "wv" token is what lets Google and other providers run sign-in at
         // all; they refuse a WebView and detect it from that token. "desktop" additionally drops
         // the Mobile/Android tokens, which is how you get a site's wide layout on a phone.
@@ -103,6 +106,27 @@ public class MainActivity extends Activity {
         } else {
             web.loadUrl(BuildConfig.START_URL);
         }
+    }
+
+    /**
+     * Let the WebView follow the system light or dark setting. A site that handles dark itself
+     * is told which one is in use and styles its own page; one that does not gets darkened by
+     * the WebView. Both depend on the activity theme, which is why values-night exists and why
+     * uiMode is not in configChanges.
+     */
+    @SuppressWarnings("deprecation")
+    private void applyDarkMode(WebSettings s) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            s.setAlgorithmicDarkeningAllowed(true);
+        } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            // Replaced by algorithmic darkening in API 33, still the only option below it.
+            s.setForceDark(WebSettings.FORCE_DARK_AUTO);
+        }
+        int mode = getResources().getConfiguration().uiMode & Configuration.UI_MODE_NIGHT_MASK;
+        boolean night = mode == Configuration.UI_MODE_NIGHT_YES;
+        // Without this the WebView paints white before the page draws, which is a bright flash
+        // on a dark screen every time the app opens.
+        web.setBackgroundColor(night ? 0xFF121212 : 0xFFFFFFFF);
     }
 
     /**

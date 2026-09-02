@@ -9,14 +9,18 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:label="@string/app_name"
         android:supportsRtl="true"
-        android:theme="@android:style/Theme.Material.Light.NoActionBar">
+        android:theme="@style/AppTheme">
 
-        <!-- configChanges keeps the page alive across rotation instead of reloading it. -->
+        <!-- configChanges keeps the page alive across rotation instead of reloading it.
+             uiMode is deliberately absent: the activity has to be recreated when the system
+             switches between light and dark, otherwise the theme never changes and the
+             WebView keeps reporting the old one to the page. The page itself survives that,
+             because onSaveInstanceState stores the WebView state. -->
         <activity
             android:name=".MainActivity"
             android:exported="true"
             android:launchMode="singleTask"
-            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboardHidden|uiMode|density">
+            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboardHidden|density">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
