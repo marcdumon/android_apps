@@ -1,0 +1,15 @@
+# Build output and machine-specific paths.
+.gradle/
+build/
+local.properties
+
+# Signing material. This repository is public, so the keystore and its password are
+# never committed. Keep a backup somewhere else: without the original keystore a rebuilt APK
+# can no longer install over the copy already on the phone, it installs as a separate app.
+*.keystore
+signing.properties
+
+# Built apps. Rebuild with the project's build.sh.
+*.apk
+
+__pycache__/
