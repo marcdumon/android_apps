@@ -26,6 +26,9 @@ public class MainActivity extends Activity {
 
     private WebView web;
     private String homeDomain;
+    private String siteUserAgent;
+    private String loginUserAgent;
+    private String currentUserAgent;
 
     @SuppressLint("SetJavaScriptEnabled")
     @Override
@@ -48,7 +51,17 @@ public class MainActivity extends Activity {
         // Dropping the "wv" token is what lets Google and other providers run sign-in at
         // all; they refuse a WebView and detect it from that token. "desktop" additionally drops
         // the Mobile/Android tokens, which is how you get a site's wide layout on a phone.
-        s.setUserAgentString(buildUserAgent(s.getUserAgentString(), BuildConfig.UA_MODE));
+        //
+        // A desktop user agent coming from a phone is contradicted by everything else the
+        // WebView reveals, and sign-in pages reject that outright. So the hosts listed in
+        // LOGIN_HOSTS get the plain phone user agent instead, and the site itself keeps the
+        // configured one. Sign in once, and the cookie keeps you in from then on.
+        String stock = s.getUserAgentString();
+        siteUserAgent = buildUserAgent(stock, BuildConfig.UA_MODE);
+        loginUserAgent = buildUserAgent(stock, "mobile");
+        currentUserAgent = siteUserAgent;
+        s.setUserAgentString(siteUserAgent);
+        applyUserAgentFor(Uri.parse(BuildConfig.START_URL));
         // Popups would open a second, invisible WebView; force everything into this one.
         s.setSupportMultipleWindows(false);
         s.setJavaScriptCanOpenWindowsAutomatically(true);
@@ -64,10 +77,19 @@ public class MainActivity extends Activity {
             public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
                 Uri url = request.getUrl();
                 if (staysInApp(url)) {
+                    // Set before returning false, so the request that follows carries it.
+                    applyUserAgentFor(url);
                     return false;
                 }
                 openExternally(url);
                 return true;
+            }
+
+            @Override
+            public void onPageStarted(WebView view, String url, android.graphics.Bitmap favicon) {
+                // Redirects do not pass through shouldOverrideUrlLoading, and a sign-in flow is
+                // mostly redirects, so the choice is repeated here for whatever actually loaded.
+                applyUserAgentFor(Uri.parse(url));
             }
         });
 
@@ -84,6 +106,32 @@ public class MainActivity extends Activity {
      * Reuses the Chrome version already in the string so it stays honest. "desktop" claims to be
      * Chrome on Linux; anything else keeps the phone identity but without the WebView marker.
      */
+    /**
+     * Give sign-in hosts the phone user agent and everything else the configured one. Only
+     * writes when the value actually changes, since setting it can restart a load.
+     */
+    private void applyUserAgentFor(Uri url) {
+        String host = url == null ? null : url.getHost();
+        String wanted = isLoginHost(host) ? loginUserAgent : siteUserAgent;
+        if (!wanted.equals(currentUserAgent)) {
+            currentUserAgent = wanted;
+            web.getSettings().setUserAgentString(wanted);
+        }
+    }
+
+    private static boolean isLoginHost(String host) {
+        if (host == null || BuildConfig.LOGIN_HOSTS.isEmpty()) {
+            return false;
+        }
+        for (String entry : BuildConfig.LOGIN_HOSTS.split(",")) {
+            String candidate = entry.trim();
+            if (!candidate.isEmpty() && (host.equals(candidate) || host.endsWith("." + candidate))) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     private static String buildUserAgent(String webViewUserAgent, String mode) {
         Matcher m = Pattern.compile("Chrome/([0-9.]+)").matcher(webViewUserAgent);
         String version = m.find() ? m.group(1) : "131.0.0.0";
