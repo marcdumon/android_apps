@@ -9,7 +9,15 @@ was released and confirmed working on a device carries a git tag
 Launcher icon is a tick instead of the app's first letter, drawn by `make_icon.py`. The
 letter was the generator's fallback for apps built without an icon file.
 
-Not tagged: not yet confirmed on a device.
+Follows the system light and dark setting. The app was pinned to a light theme, and a WebView
+reports the app's theme to the page, so the page was always told light. There is now an
+`AppTheme` with a `values-night` variant, the WebView is allowed to darken pages that do not
+handle dark themselves, and its background is painted dark so there is no white flash before
+the page draws. `uiMode` was removed from `configChanges` so the activity is recreated when
+the setting changes; without that nothing re-themes until the app is killed.
+
+Confirmed working on a device. Not tagged: version numbering and tagging are decided
+separately.
 
 ## 1.5, versionCode 5 (tagged)
 
