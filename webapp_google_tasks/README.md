@@ -24,9 +24,15 @@ The app already drops the `wv` token that gives a WebView away, but a *desktop* 
 coming from a phone is contradicted by everything else about the client, and sign-in pages
 reject that too.
 
-So `LOGIN_HOSTS` in `gradle.properties` lists the domains that get the plain phone user agent
-regardless of `UA_MODE`. It defaults to `accounts.google.com`. The task list itself keeps the
-desktop user agent, which is what shows every list side by side instead of one at a time.
+So while `LOGIN_HOSTS` is set and you have not signed in yet, the app runs entirely on the
+phone user agent, which sign-in accepts. Once it sees the site load with cookies, it records
+that and every launch from then on uses the configured user agent, which for this app is the
+desktop one that shows every list side by side instead of one at a time.
 
-Signing in is a one-off: the cookie survives app updates, because an update keeps the same
-signing certificate and the same stored data.
+**Restart the app once after signing in** to get the wide layout. The user agent is chosen at
+startup and deliberately never changed while the app is running: Android restarts the current
+page load whenever it changes, so switching it on a redirect sends a sign-in flow into an
+endless reload and the app shows nothing but a white screen. Version 1.4 had exactly that bug.
+
+Signing in is a one-off. The cookie and the recorded flag survive app updates, because an
+update keeps the same signing certificate and the same stored data.

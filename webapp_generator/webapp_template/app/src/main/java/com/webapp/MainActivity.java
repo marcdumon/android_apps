@@ -28,7 +28,10 @@ public class MainActivity extends Activity {
     private String homeDomain;
     private String siteUserAgent;
     private String loginUserAgent;
-    private String currentUserAgent;
+    private boolean signedIn;
+
+    private static final String PREFS = "webapp";
+    private static final String KEY_SIGNED_IN = "signed_in";
 
     @SuppressLint("SetJavaScriptEnabled")
     @Override
@@ -56,12 +59,18 @@ public class MainActivity extends Activity {
         // WebView reveals, and sign-in pages reject that outright. So the hosts listed in
         // LOGIN_HOSTS get the plain phone user agent instead, and the site itself keeps the
         // configured one. Sign in once, and the cookie keeps you in from then on.
+        //
+        // The user agent is chosen once here and never touched again: Android restarts the
+        // current load whenever it changes, so changing it on a redirect sends the sign-in
+        // flow into an endless reload. Until the account is signed in, the whole app uses the
+        // phone user agent so the sign-in page accepts it. Afterwards it uses the configured
+        // one, which for a desktop mode app is what shows the full-width layout.
         String stock = s.getUserAgentString();
         siteUserAgent = buildUserAgent(stock, BuildConfig.UA_MODE);
         loginUserAgent = buildUserAgent(stock, "mobile");
-        currentUserAgent = siteUserAgent;
-        s.setUserAgentString(siteUserAgent);
-        applyUserAgentFor(Uri.parse(BuildConfig.START_URL));
+        signedIn = getSharedPreferences(PREFS, MODE_PRIVATE).getBoolean(KEY_SIGNED_IN, false);
+        boolean needsSignIn = !signedIn && !BuildConfig.LOGIN_HOSTS.isEmpty();
+        s.setUserAgentString(needsSignIn ? loginUserAgent : siteUserAgent);
         // Popups would open a second, invisible WebView; force everything into this one.
         s.setSupportMultipleWindows(false);
         s.setJavaScriptCanOpenWindowsAutomatically(true);
@@ -77,8 +86,6 @@ public class MainActivity extends Activity {
             public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
                 Uri url = request.getUrl();
                 if (staysInApp(url)) {
-                    // Set before returning false, so the request that follows carries it.
-                    applyUserAgentFor(url);
                     return false;
                 }
                 openExternally(url);
@@ -86,10 +93,8 @@ public class MainActivity extends Activity {
             }
 
             @Override
-            public void onPageStarted(WebView view, String url, android.graphics.Bitmap favicon) {
-                // Redirects do not pass through shouldOverrideUrlLoading, and a sign-in flow is
-                // mostly redirects, so the choice is repeated here for whatever actually loaded.
-                applyUserAgentFor(Uri.parse(url));
+            public void onPageFinished(WebView view, String url) {
+                rememberSignedIn(url);
             }
         });
 
@@ -107,15 +112,22 @@ public class MainActivity extends Activity {
      * Chrome on Linux; anything else keeps the phone identity but without the WebView marker.
      */
     /**
-     * Give sign-in hosts the phone user agent and everything else the configured one. Only
-     * writes when the value actually changes, since setting it can restart a load.
+     * Once the site itself loads with cookies set, the account is signed in, so later launches
+     * can use the configured user agent. Changing it now would restart the load, so the flag is
+     * only read at startup.
      */
-    private void applyUserAgentFor(Uri url) {
-        String host = url == null ? null : url.getHost();
-        String wanted = isLoginHost(host) ? loginUserAgent : siteUserAgent;
-        if (!wanted.equals(currentUserAgent)) {
-            currentUserAgent = wanted;
-            web.getSettings().setUserAgentString(wanted);
+    private void rememberSignedIn(String url) {
+        if (signedIn || url == null) {
+            return;
+        }
+        String host = Uri.parse(url).getHost();
+        if (host == null || !homeDomain.equals(registrableDomain(host))) {
+            return;
+        }
+        String cookie = CookieManager.getInstance().getCookie(url);
+        if (cookie != null && !cookie.isEmpty()) {
+            signedIn = true;
+            getSharedPreferences(PREFS, MODE_PRIVATE).edit().putBoolean(KEY_SIGNED_IN, true).apply();
         }
     }
 
