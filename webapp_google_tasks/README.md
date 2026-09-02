@@ -36,3 +36,10 @@ endless reload and the app shows nothing but a white screen. Version 1.4 had exa
 
 Signing in is a one-off. The cookie and the recorded flag survive app updates, because an
 update keeps the same signing certificate and the same stored data.
+
+## Versions
+
+`CHANGELOG.md` lists every version, what changed, and for the ones without a git tag, why
+they have none. The rule is that a tag means the build was released and confirmed working on
+a device, so a version that was withdrawn or is still being tested is recorded there but not
+tagged.
