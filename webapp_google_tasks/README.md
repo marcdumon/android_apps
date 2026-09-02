@@ -16,3 +16,17 @@ user agent makes Google refuse to sign you in, and a mobile token makes sites se
 layout. See buildUserAgent() in the template.
 
 KEEP gtasks.keystore. Without it a rebuilt APK can no longer install over the copy on the phone.
+
+## Signing in
+
+Google refuses to run sign-in inside an embedded browser and detects one from the user agent.
+The app already drops the `wv` token that gives a WebView away, but a *desktop* user agent
+coming from a phone is contradicted by everything else about the client, and sign-in pages
+reject that too.
+
+So `LOGIN_HOSTS` in `gradle.properties` lists the domains that get the plain phone user agent
+regardless of `UA_MODE`. It defaults to `accounts.google.com`. The task list itself keeps the
+desktop user agent, which is what shows every list side by side instead of one at a time.
+
+Signing in is a one-off: the cookie survives app updates, because an update keeps the same
+signing certificate and the same stored data.

@@ -28,6 +28,7 @@ android {
         buildConfigField 'String', 'START_URL', "\"${START_URL}\""
         buildConfigField 'String', 'UA_MODE', "\"${UA_MODE}\""
         buildConfigField 'String', 'EXTRA_HOSTS', "\"${EXTRA_HOSTS}\""
+        buildConfigField 'String', 'LOGIN_HOSTS', "\"${LOGIN_HOSTS}\""
     }
 
     buildFeatures {

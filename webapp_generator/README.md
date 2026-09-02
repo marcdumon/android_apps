@@ -47,6 +47,7 @@ the projects it makes.
 | `--bg '#RRGGBB'` | Icon background. Default `#1A73E8`. |
 | `--ua desktop\|mobile` | Which layout the site serves. Default `mobile`. |
 | `--extra-hosts H,H` | Extra hosts kept inside the app. The site's own domain is always kept; everything else opens in the browser. |
+| `--login-hosts H` | Sign-in domains that always get the phone user agent, even in desktop mode. Default `accounts.google.com`. A desktop user agent from a phone is refused by sign-in pages. |
 | `--version-code N` | Force a version code. |
 | `--force` | Rebuild over an existing project, keeping its keystore. |
 
