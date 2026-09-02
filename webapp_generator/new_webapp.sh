@@ -38,6 +38,7 @@ USAGE
 NAME=""; URL=""; APPID=""; DIR=""; ICON=""; BG="#1A73E8"; UA="mobile"
 EXTRA_HOSTS="google.com,gstatic.com,googleusercontent.com,googleapis.com"
 LOGIN_HOSTS="accounts.google.com"
+SESSION_COOKIE=""
 FORCE=""; FORCED_VC=""
 STORE_PASSWORD=webapp123; KEY_ALIAS=webapp; KEY_PASSWORD=webapp123
 
@@ -52,6 +53,7 @@ while [[ $# -gt 0 ]]; do
         --ua) UA="$2"; shift 2 ;;
         --extra-hosts) EXTRA_HOSTS="$2"; shift 2 ;;
         --login-hosts) LOGIN_HOSTS="$2"; shift 2 ;;
+        --session-cookie) SESSION_COOKIE="$2"; shift 2 ;;
         --store-password) STORE_PASSWORD="$2"; shift 2 ;;
         --key-alias) KEY_ALIAS="$2"; shift 2 ;;
         --key-password) KEY_PASSWORD="$2"; shift 2 ;;
@@ -105,6 +107,7 @@ START_URL=$URL
 UA_MODE=$UA
 EXTRA_HOSTS=$EXTRA_HOSTS
 LOGIN_HOSTS=$LOGIN_HOSTS
+SESSION_COOKIE=$SESSION_COOKIE
 ICON_BACKGROUND=$BG
 VERSION_CODE=$VERSION_CODE
 VERSION_NAME=1.$VERSION_CODE
