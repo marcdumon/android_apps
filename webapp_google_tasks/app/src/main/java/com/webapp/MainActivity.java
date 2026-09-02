@@ -31,7 +31,9 @@ public class MainActivity extends Activity {
     private boolean signedIn;
 
     private static final String PREFS = "webapp";
-    private static final String KEY_SIGNED_IN = "signed_in";
+    // Renaming this key resets everyone's stored state, which is wanted whenever the rule
+    // for deciding it changes and an old value would be wrong.
+    private static final String KEY_SIGNED_IN = "signed_in_v2";
 
     @SuppressLint("SetJavaScriptEnabled")
     @Override
@@ -56,9 +58,7 @@ public class MainActivity extends Activity {
         // the Mobile/Android tokens, which is how you get a site's wide layout on a phone.
         //
         // A desktop user agent coming from a phone is contradicted by everything else the
-        // WebView reveals, and sign-in pages reject that outright. So the hosts listed in
-        // LOGIN_HOSTS get the plain phone user agent instead, and the site itself keeps the
-        // configured one. Sign in once, and the cookie keeps you in from then on.
+        // WebView reveals, and sign-in pages reject that outright.
         //
         // The user agent is chosen once here and never touched again: Android restarts the
         // current load whenever it changes, so changing it on a redirect sends the sign-in
@@ -106,6 +106,24 @@ public class MainActivity extends Activity {
     }
 
     /**
+     * Whether the cookies for a page indicate a signed-in session rather than the cookies a
+     * site sets for anonymous visitors. SESSION_COOKIE names the marker to look for; when it
+     * is empty any cookie at all counts, which suits sites that set none until you sign in.
+     */
+    private static boolean hasSessionCookie(String cookie) {
+        String marker = BuildConfig.SESSION_COOKIE;
+        if (marker.isEmpty()) {
+            return !cookie.isEmpty();
+        }
+        for (String pair : cookie.split(";")) {
+            if (pair.trim().startsWith(marker)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
      * Rewrites the stock WebView user agent.
      *
      * Reuses the Chrome version already in the string so it stays honest. "desktop" claims to be
@@ -125,7 +143,7 @@ public class MainActivity extends Activity {
             return;
         }
         String cookie = CookieManager.getInstance().getCookie(url);
-        if (cookie != null && !cookie.isEmpty()) {
+        if (cookie != null && hasSessionCookie(cookie)) {
             signedIn = true;
             getSharedPreferences(PREFS, MODE_PRIVATE).edit().putBoolean(KEY_SIGNED_IN, true).apply();
         }

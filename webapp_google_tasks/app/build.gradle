@@ -29,6 +29,7 @@ android {
         buildConfigField 'String', 'UA_MODE', "\"${UA_MODE}\""
         buildConfigField 'String', 'EXTRA_HOSTS', "\"${EXTRA_HOSTS}\""
         buildConfigField 'String', 'LOGIN_HOSTS', "\"${LOGIN_HOSTS}\""
+        buildConfigField 'String', 'SESSION_COOKIE', "\"${SESSION_COOKIE}\""
     }
 
     buildFeatures {
