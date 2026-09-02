@@ -1,0 +1,64 @@
+plugins {
+    id 'com.android.application'
+}
+
+// Signing credentials live in signing.properties, which git ignores, so this project
+// can sit in a public repository without publishing the keystore password.
+def signingProps = new Properties()
+def signingFile = rootProject.file('signing.properties')
+if (signingFile.exists()) {
+    signingFile.withInputStream { signingProps.load(it) }
+}
+
+// Everything that differs between apps comes from gradle.properties, so this file and
+// the Java source are identical in every generated app.
+android {
+    namespace 'com.webapp'
+    compileSdk 34
+
+    defaultConfig {
+        applicationId APP_ID
+        minSdk 26
+        targetSdk 34
+        versionCode Integer.parseInt(VERSION_CODE)
+        versionName VERSION_NAME
+
+        resValue 'string', 'app_name', APP_NAME
+        resValue 'color', 'ic_launcher_background', ICON_BACKGROUND
+        buildConfigField 'String', 'START_URL', "\"${START_URL}\""
+        buildConfigField 'String', 'UA_MODE', "\"${UA_MODE}\""
+        buildConfigField 'String', 'EXTRA_HOSTS', "\"${EXTRA_HOSTS}\""
+    }
+
+    buildFeatures {
+        buildConfig true
+    }
+
+    signingConfigs {
+        release {
+            if (signingFile.exists()) {
+                storeFile rootProject.file(signingProps['STORE_FILE'])
+                storePassword signingProps['STORE_PASSWORD']
+                keyAlias signingProps['KEY_ALIAS']
+                keyPassword signingProps['KEY_PASSWORD']
+            }
+        }
+    }
+
+    buildTypes {
+        release {
+            // Without signing.properties the release build is left unsigned rather
+            // than failing, so a fresh clone still compiles. An unsigned APK will not
+            // install; restore the keystore and signing.properties from your key backup.
+            if (signingFile.exists()) {
+                signingConfig signingConfigs.release
+            }
+            minifyEnabled false
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_11
+        targetCompatibility JavaVersion.VERSION_11
+    }
+}
